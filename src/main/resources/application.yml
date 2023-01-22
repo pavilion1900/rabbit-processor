@@ -1,20 +1,41 @@
 spring:
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
   cloud:
     stream:
       function:
         definition: processor
+      rabbit:
+        bindings:
+          processor-in-0:
+            consumer:
+              exchangeType: direct
+#              autoBindDlq: true
+#              queueNameGroupOnly: true
+              binding-routing-key: "rabbit-producer.to.rabbit-processor"
+          processor-out-0:
+            producer:
+              exchangeType: direct
+              routing-key-expression: "'rabbit-processor.to.rabbit-consumer'"
       bindings:
         processor-in-0:
           destination: sample.queue
           group: processor
+          binder: rabbit
         processor-out-0:
-          destination: sample.queue2
+          destination: sample.queue
           group: consumer
+          binder: rabbit
+      binders:
+        rabbit:
+          type: rabbit
+          environment:
+            spring:
+              rabbit:
+                deliveryMode: ${DELIVERY_MODE:2}
+                host: ${RABBIT_HOST:localhost}
+                port: ${RABBIT_PORT:5672}
+                username: ${RABBIT_USERNAME:guest}
+                password: ${RABBIT_PASSWORD:guest}
+                virtual-host: ${RABBIT_VHOST:/}
 
 server:
   port: 8081
